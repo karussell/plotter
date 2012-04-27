@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Document   : genvlin.xml
+    Created on : 7. April 2006, 11:14
+    Author     : peter karich
+    This file is for the MiniPlatform only.
+-->
+
+<properties>
+    <property key="file.plugins" value="plugins.xml">
+    <!-- etc. -->
+</properties>

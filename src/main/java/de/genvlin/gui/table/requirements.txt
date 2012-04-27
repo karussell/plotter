@@ -1,0 +1,4 @@
+a vector might contain null values
+    => x or y might contain null
+    => plot/addplot method has to check for null values!
+        it is slower, but less memory consuming (check + copy these values).

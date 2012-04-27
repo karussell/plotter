@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.1//EN" "http://www.netbeans.org/dtds/filesystem-1_1.dtd">
+<filesystem>
+    <!-- add the plugin list to netbeans system filesystem-->
+    <folder name = "genvlin-root">
+        <!--file name="plugins.xml" url="plugins.xml"/-->
+        <file name="genvlin.xml" url="genvlin.xml"/>
+    </folder> 
+</filesystem>
+
