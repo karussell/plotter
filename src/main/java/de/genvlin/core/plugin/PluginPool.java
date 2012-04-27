@@ -177,7 +177,7 @@ public class PluginPool {
         }
         
         //TODO I18N
-        Log.log("Successfully plugged in: "+ plugin.getName()+".", false);
+        Log.log("Successfully plugged in: "+ plugin.getName(), false);
     }
     
     public boolean acceptAsFitEngine(FitPlugin plugin) {

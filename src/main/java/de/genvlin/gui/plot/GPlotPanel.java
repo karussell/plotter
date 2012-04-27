@@ -39,16 +39,12 @@ import de.genvlin.gui.util.GMouseAdapter;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.Serializable;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
 import java.util.Locale;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
+import javax.swing.*;
 
 /**
  * The main class for plotting the data in an extra panel. Its a very simple implemention of a plot
@@ -56,8 +52,7 @@ import javax.swing.JPopupMenu;
  *
  * @author Peter Karich
  */
-public class GPlotPanel extends JPanel
-        implements ActionListener, CollectionListener {
+public class GPlotPanel extends JPanel implements CollectionListener {
 
     static final long serialVersionUID = 432233244;
     public static int DISTANCE = 0, ZOOM = 1, NORMAL = 2;
@@ -78,6 +73,7 @@ public class GPlotPanel extends JPanel
     private int automaticScaleDataNo = -1;
     private PopupSupportImpl popupSupport;
     private XYPool pool;
+    private int lastPlot = -1;
 
     public GPlotPanel(XYPool pool) {
         if (pool == null) {
@@ -223,6 +219,10 @@ public class GPlotPanel extends JPanel
         colorDataIndex++;
     }
 
+    public void moveDataToFront(int data) {
+        lastPlot = data;
+    }
+
     /**
      * This method removes a plot from the plotwindow
      */
@@ -238,10 +238,14 @@ public class GPlotPanel extends JPanel
         xOff = cSys.getYAxis().getXOffset();
         yOff = cSys.getXAxis().getYOffset();
         g.setClip(xOff, yOff, cSys.winWidth() - 2 * xOff, cSys.winHeight() - 2 * yOff);
-
-        for (int c = 0; c < pool.size(); c++) {
-            ((XYData) pool.get(c)).draw(g, cSys);
+        
+        for (int plot = 0; plot < pool.size(); plot++) {
+            if (lastPlot != plot)
+                ((XYData) pool.get(plot)).draw(g, cSys);
         }
+        if (lastPlot >= 0)
+            ((XYData) pool.get(lastPlot)).draw(g, cSys);
+
         //reset clipping area:
         g.setClip(0, 0, cSys.winWidth(), cSys.winHeight());
     }
@@ -406,43 +410,38 @@ public class GPlotPanel extends JPanel
      */
     public JPopupMenu createPopup(MouseEvent me) {
         JPopupMenu popMenu = new JPopupMenu();
-        JMenuItem mi;
 
         for (int i = 0; i < pool.size(); i++) {
+            final int fin = i;
             JMenu menu = new JMenu(i + " " + pool.get(i));
+            menu.addMouseListener(new MouseAdapter() {
+
+                @Override public void mouseEntered(MouseEvent e) {
+                    moveDataToFront(fin);
+                    repaint();
+                }
+            });
             menu.setForeground(getColor(i));
+            menu.add(new AbstractAction("Automatic scaling") {
 
-            mi = new JMenuItem("Automatic scaling");
-            mi.addActionListener(this);
-            menu.add(mi);
+                public void actionPerformed(ActionEvent e) {
+                    automaticOneScale(fin);
+                    repaint();
+                }
+            });
+            menu.add(new AbstractAction("Remove") {
 
-            mi = new JMenuItem("Remove");
-            mi.addActionListener(this);
-            menu.add(mi);
+                public void actionPerformed(ActionEvent e) {
+                    removeData(fin);
+                    repaint();
+                }
+            });
             popMenu.add(menu);
         }
+        if (pool.size() == 0)
+            popMenu.add(new JMenuItem("no data yet"));
+
         return popMenu;
-    }
-
-    /**
-     * This method will be called after popupMenu selection
-     */
-    public void actionPerformed(ActionEvent ae) {
-        String str = ae.getActionCommand();
-
-        int i = -1;
-        try {
-            i = Integer.parseInt(str.substring(str.indexOf(':') + 1));
-        } catch (NumberFormatException nfe) {
-            return;
-        }
-
-        if (str.startsWith("Automatic scaling:")) {
-            automaticScale(i);
-        } else
-            removeData(i);
-
-        repaint();
     }
 
     private boolean reloadPureXYInterfaceToXYData(ID id) {
@@ -484,35 +483,4 @@ public class GPlotPanel extends JPanel
                 reloadPureXYInterfaceToXYData(ve.getFrom(), ve.getTo());
         }
     }
-    /*
-     * //incompatible return types "void JComponent.remove(int)" public boolean remove(Comparable
-     * id) { return pool.remove(id); }
-     *
-     * public ID getID() { return pool.getID(); }
-     *
-     *
-     * public IDData get(Comparable id) { return pool.get(id); }
-     *
-     * public IDData get(int index) { return pool.get(index); }
-     *
-     * public int indexOf(Comparable id) { return pool.indexOf(id); }
-     *
-     * public Iterator iterator() { return pool.iterator(); }
-     *
-     * public String getInfo() { return pool.getInfo(); }
-     *
-     * public String getTitle() { return pool.getTitle(); }
-     *
-     * public void setInfo(String info) { pool.setInfo(info); }
-     *
-     * public void setTitle(String title) { pool.setTitle(title); }
-     *
-     * public void addVectorListener(CollectionListener vl) { pool.addVectorListener(vl); }
-     *
-     * public void removeVectorListener(CollectionListener cl) { pool.removeVectorListener(cl); }
-     *
-     * public void clear() { pool.clear(); }
-     *
-     * public int compareTo(Object o) { return pool.compareTo(o); }
-     */
 }
