@@ -2,7 +2,7 @@
  * Axis.java
  *
  * Created on 25. September 2005, 13:41
- *
+ * This stands under Public domain
  */
 
 package de.genvlin.gui.plot;

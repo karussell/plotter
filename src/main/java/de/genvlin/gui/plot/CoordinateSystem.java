@@ -2,7 +2,7 @@
  * CoordinateSystem.java
  *
  * Created on 11. September 2005, 18:18
- *
+ * This stands under Public domain
  */
 package de.genvlin.gui.plot;
 
