@@ -1,10 +1,15 @@
 /*
  * ID.java
  *
- * Created on 17. März 2006, 15:59
+ * Created on 17. March 2006, 15:59
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,5 +34,5 @@ package de.genvlin.core.data;
  * here be sure that all classes are compatible with each other! (-> compareTo/equals)
  * @author Peter Karich
  */
-public interface ID extends Comparable {
+public interface ID extends Comparable<ID> {
 }

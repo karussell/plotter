@@ -1,10 +1,15 @@
 /*
  * StringID.java
  *
- * Created on 17. März 2006, 21:23
+ * Created on 17. March 2006, 21:23
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,7 +48,7 @@ public class StringID implements ID {
         this.id = n.toString();
     }
     
-    public int compareTo(Object o) {
+    public int compareTo(ID o) {
         return id.compareTo(o.toString());
     }
     

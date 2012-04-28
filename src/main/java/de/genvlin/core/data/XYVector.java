@@ -1,6 +1,11 @@
 /*
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +26,19 @@
 
 package de.genvlin.core.data;
 
+import java.awt.Point;
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/** This class is a wrapper around two Vectors. They can used as x-y-pairs
+/**
+ * This class is a wrapper around two Vectors. They can used as x-y-pairs
  * in a plot. Where plot could be a <tt>XYVectorPool</tt>.
  */
 class XYVector extends AbstractCollection 
-    implements XYVectorInterface {
+        implements BoundedXYCollectionInterface, XYVectorInterface, Serializable {
+    
     private VectorInterface x;
     private VectorInterface y;
     
@@ -43,78 +52,77 @@ class XYVector extends AbstractCollection
         x.add(xNum);
         y.add(yNum);
     }
-    
-    private VectorInterface getX() {
-        return x;
-    }
-    
-    private VectorInterface getY() {
-        return y;
-    }
-    
-    Number n;
         
-    /** This method returns the maximal value in x data array
+    /** 
+     * This method returns the maximal value in x data array
      */
-    public double getMaxX() {
+    public Number getMaxX() {
         if(size()== 0)
             return Double.POSITIVE_INFINITY;
         
-        //return ((Number)Collections.max(xyVector.getX())).doubleValue();
+        /*//return ((Number)Collections.max(xyVector.getX())).doubleValue();
         double ret = Double.NEGATIVE_INFINITY;
         for(int i=0; i < getX().size(); i++) {
             n = getX(i);
             if(n!=null && ret < n.doubleValue()) 
                 ret = n.doubleValue();
-        }
-        
-        return ret;
+        }*/
+        return x.getMax();        
     }
     
-    /** This method returns the minimal value in x data array
+    /** 
+     * This method returns the minimal value in x data array
      */
-    public double getMinX() {
+    public Number getMinX() {
         if(size() == 0) 
             return Double.NEGATIVE_INFINITY;
         
-        double ret = Double.POSITIVE_INFINITY;
+        /*double ret = Double.POSITIVE_INFINITY;
         for(int i=0; i < getX().size(); i++) {
             n = getX(i);
             if(n!=null && ret > n.doubleValue()) 
                 ret = n.doubleValue();
         }
-        return ret;
+        return ret;*/
+        return x.getMin();
     }
     
     
-    /** This method returns the maximal value in y data array
+    /** 
+     * This method returns the maximal value in y data array
      */
-    public double getMaxY() {
-        if(size()== 0) 
+    public Number getMaxY() {
+        if(size() == 0) {
             return Double.POSITIVE_INFINITY;
+        }
         
-        double ret = Double.NEGATIVE_INFINITY;
+        return y.getMax();
+        
+        /*double ret = Double.NEGATIVE_INFINITY;
         for(int i=0; i < getY().size(); i++) {
             n = getY(i);
             if(n!=null && ret < n.doubleValue()) 
                 ret = n.doubleValue();
         }
-        return ret;
+        return ret;*/
     }
     
-    /** This method returns the minimal value in y data array
+    /** 
+     * This method returns the minimal value in y data array
      */
-    public double getMinY() {
-        if(size() == 0) 
+    public Number getMinY() {
+        if(size() == 0) {
             return Double.NEGATIVE_INFINITY;
-        
+        }
+        /*
         double ret = Double.POSITIVE_INFINITY;
         for(int i=0; i < getY().size(); i++) {
             n = getY(i);
             if(n!=null && ret > n.doubleValue()) 
                 ret = n.doubleValue();
         }
-        return ret;
+        return ret;*/
+        return y.getMin();
     }
             
     public Point2D.Double get(int i) {
@@ -141,7 +149,7 @@ class XYVector extends AbstractCollection
         return false;
     }
     
-    public Iterator iterator() {
+    public Iterator<Point.Double> iterator() {
         return new XYVectorIterator();
     }
     
@@ -175,7 +183,7 @@ class XYVector extends AbstractCollection
     
     /** The Iterator on Point.Double.
      */
-    class XYVectorIterator implements Iterator {
+    class XYVectorIterator implements Iterator<Point.Double> {
         
         /** points to current element (will returned by next()) */
         int cursor = 0;
@@ -190,9 +198,9 @@ class XYVector extends AbstractCollection
             return cursor != size();
         }
         
-        public Object next() {
+        public Point.Double next() {
             try {
-                Object next = get(cursor);
+                Point.Double next = get(cursor);
                 lastRet = cursor++;
                 return next;
             } catch(IndexOutOfBoundsException e) {

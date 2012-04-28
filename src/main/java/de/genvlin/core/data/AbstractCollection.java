@@ -1,10 +1,15 @@
 /*
  * AbstractCollection.java
  *
- * Created on 18. März 2006, 18:14
+ * Created on 18. March 2006, 18:14
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,55 +31,55 @@ package de.genvlin.core.data;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 /** A base class providing several useful methods for a vector and
  * for a pool. See {@link VectorInterface} and {@link Pool}.
  *
  * @author Peter Karich
  */
-public abstract class AbstractCollection
-        implements CollectionInterface{
+public abstract class AbstractCollection implements CollectionInterface {
     private ID id;
-    private HashSet listeners;
+    private Set<CollectionListener> listeners;
     
     /**
-     * This variable indicates that exactly one data entry was
+     * This variable indicates that exactly one data entry was
      * removed.
      */
     static final public String REMOVE_DATA = "Remove Data";
     
     /**
-     * This variable indicates that exactly one data entry was
+     * This variable indicates that exactly one data entry was
      * added.
      */
     static final public String ADD_DATA = "Add Data";
     
     /**
-     * This variable indicates that more than one data entry was
+     * This variable indicates that more than one data entry was
      * added.
      */
     static final public String ADD_SOME = "Add Some";
     
     /**
-     * This variable indicates that more than one data entry was
+     * This variable indicates that more than one data entry was
      * removed.
      */
     static final public String REMOVE_SOME = "Remove Some";
     
     /**
-     * This variable indicates that the "decoration" (title,
+     * This variable indicates that the "decoration" (title,
      * info, etc.) of this vector was changed.
      */
     static final public String CHANGE_DECORATION = "Change Decoration";
     
     /**
-     * This variable indicates that more than one data entry
+     * This variable indicates that more than one data entry
      * was changed.     
      */
     static final public String CHANGE_SOME = "Change Soem";    
     
     /**
-     * This variable indicates that one data entry was changed.     
+     * This variable indicates that one data entry was changed.     
      */
     static final public String CHANGE_DATA = "Change Data";    
     
@@ -82,29 +87,48 @@ public abstract class AbstractCollection
         setID(id);
     }
     
-    private HashSet getListeners() {
-        if(listeners == null)
-            listeners = new HashSet();
+    private synchronized Set<CollectionListener> getListeners() {
+        if(listeners == null) {
+            listeners = new HashSet<CollectionListener>();
+        }
         
         return listeners;
     }
     
+    @Override
     protected Object clone() throws CloneNotSupportedException {
         return MainPool.getDefault().clone(this);
     }
     
+    @Override
     public String toString() {
         if(info !=null) return info;
         
         return getID().toString();
     }
     
+    @Override
     public boolean equals(Object obj) {
-        return getID().equals(((AbstractCollection)obj).getID());
+        if(obj == null) {
+            return false;
+        } else if(obj instanceof AbstractCollection) {
+            return getID().equals(((AbstractCollection)obj).getID());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 37 * hash + (this.id != null ? this.id.hashCode() : 0);
+        hash = 37 * hash + (this.title != null ? this.title.hashCode() : 0);
+        hash = 37 * hash + (this.info != null ? this.info.hashCode() : 0);
+        return hash;
     }
     
-    public int compareTo(Object o) {
-        return getID().compareTo(((IDData)o).getID());
+    public int compareTo(IDData o) {
+        return getID().compareTo(o.getID());
     }
     
     public ID getID() {
@@ -115,11 +139,11 @@ public abstract class AbstractCollection
         this.id = id;
     }
     
-    public void addVectorListener(CollectionListener vl) {
+    public synchronized void addVectorListener(CollectionListener vl) {
         getListeners().add(vl);
     }
     
-    public void removeVectorListener(CollectionListener vl) {
+    public synchronized void removeVectorListener(CollectionListener vl) {
         getListeners().remove(vl);
     }
     
@@ -138,11 +162,11 @@ public abstract class AbstractCollection
     }
     
     protected void fireEvent(CollectionEvent evt) {
-        HashSet pcl = getListeners();
+        Set<CollectionListener> pcl = getListeners();
         
-        Iterator iter = pcl.iterator();
+        Iterator<CollectionListener> iter = pcl.iterator();
         while(iter.hasNext()) {
-            ((CollectionListener)iter.next()).vectorChanged(evt);
+            iter.next().vectorChanged(evt);
         }
     }
     
@@ -153,7 +177,7 @@ public abstract class AbstractCollection
     /**
      * Use this method only if more than one element of this
      * Collection are involved. Use {@link #fireEvent(String, ID)}
-     * instead, if you want to fire a e.g. a "DECORATOR" event
+     * instead, if you want to fire a e.g. a "ADD_DATA" event
      *
      * @param propName the property which changed.
      * @param from the start index of the changed elements in this-idDataSource.

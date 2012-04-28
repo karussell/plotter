@@ -2,7 +2,12 @@
  * XYPool.java
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +33,8 @@ package de.genvlin.core.data;
  *
  * @author Peter Karich
  */
-public class XYPool extends Pool {
+class XYPool extends Pool<XYVectorInterface> 
+        implements PoolInterface<XYVectorInterface> {
     
     XYPool(ID id) {
         super(id);
@@ -36,55 +42,33 @@ public class XYPool extends Pool {
     
     /**
      * This method will create a new <tt>XYInterface</tt>(created by MainPool)
-     * and sets specified arguments as x respectivly y. After <tt>XYInterface</tt>
-     * will be added to this pool.
+     * and sets specified arguments as x and y respectivly.
      */
     public XYVectorInterface add(VectorInterface x, VectorInterface y) {
-        XYVectorInterface xy = (XYVectorInterface)MainPool.getDefault().create(x,y);
+        XYVectorInterface xy = MainPool.getDefault().createXYVector(x,y);
         
-        if(super.add(xy) == null) {            
-            return xy;
-        } else return null;
+        return super.add(xy);
     }
     
     /**
-     * A "foreign" <tt>XYInterface</tt> could be added to this pool. Foreign means:
+     * A "foreign" <tt>XYVectorInterface</tt> could be added to this pool. Foreign means:
      * This pool doesn't contain this <tt>XYInterface</tt> with its ID!
-     * But it doesn't mean: you can import <tt>XYInterface</tt>'s which aren't
-     * created by {@link MainPool}!!<br>
+     * But you cannot import <tt>XYInterface</tt>'s which aren't created by
+     * {@link MainPool}!!<br>
      * Use <pre> MainPool.import(MainPool pool) </pre> instead.
      */
-    public boolean add(XYInterface xy) {
-        if(super.add(xy) == null) {            
-            return true;
-        } else return false;        
-    }
+    public <S extends XYVectorInterface> S add(S data){
+        return super.add(data);
+    }    
     
     /**
-     * Use {@link #create(Class)} or {@link #add(XYInterface)} instead!
-     *
-     public boolean add(Comparable com) {
-     throw new UnsupportedOperationException("Please use create or add instead!");
-     }*/
-    
-    
-    /**
-     * This method create's a new XYInterface specified via the class arguments
-     * and adds it if possible (this should always work).
+     * This method create's a new XYVectorInterface specified via the specified
+     * classes and adds it if possible.
      *
      * @return the added and created <tt>XYInterface</tt>
      */
-    public XYVectorInterface create(Class clazzX, Class classY) {
-        
-        try {
-            XYVectorInterface ac = (XYVectorInterface)MainPool.
-                    getDefault().create(clazzX, classY);
-            if(add(ac)) return ac;
-            else return null;
-            
-        } catch(ClassCastException cce) {
-            throw new UnsupportedOperationException("Argument class should be an " +
-                    "instance of XYVectorInterface!");
-        }
+    public XYVectorInterface create(Class<VectorInterface> clazzX,
+            Class<VectorInterface> classY) {
+        return add(MainPool.getDefault().createXYVector(clazzX, classY));
     }
 }

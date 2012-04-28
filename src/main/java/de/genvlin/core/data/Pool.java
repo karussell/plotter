@@ -1,6 +1,11 @@
 /*
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +28,7 @@ package de.genvlin.core.data;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -32,31 +38,32 @@ import java.util.TreeMap;
  * Useful for PlotPanel and TablePanel implementations.
  * @author Peter Karich
  */
-class Pool extends AbstractCollection
-        implements PoolInterface {
+public class Pool<T extends IDData> extends AbstractCollection implements PoolInterface<T> {
     
-    private TreeMap intern = null;
+    private Map<ID, T> intern;
     
-    /** To compare two poolentries we need a <tt>Comparator</tt>.
+    /** 
+     * To compare two poolentries we need a <tt>Comparator</tt>.
      * If this is <tt>null</tt> the natural order will be used!
      * namely: the <tt>Comparable</tt>interface.
      */
-    private Comparator comparator = null;
+    private Comparator<? super ID> comparator = null;
     
-    /** Constructs a datapool with specified id.     
+    /** Constructs a datapool with specified id.
      */
     Pool(ID id) {
         super(id);
         comparator = getDefaultComparator();
     }
     
-    static Comparator defaultComparator;
-    private Comparator getDefaultComparator() {
+    private static Comparator<? super ID> defaultComparator;
+    
+    private Comparator<? super ID> getDefaultComparator() {
         if(defaultComparator == null) {
-            defaultComparator = new Comparator() {
-                public int compare(Object o1, Object o2) {
+            defaultComparator = new Comparator<ID>() {
+                public int compare(ID o1, ID o2) {
                     //It should be clear that we can compare via the ID's
-                    return ((Comparable)o1).compareTo(o2);
+                    return o1.compareTo(o2);
                 }
                 public boolean equals(Object obj) {
                     return obj == defaultComparator;
@@ -66,46 +73,48 @@ class Pool extends AbstractCollection
         return defaultComparator;
     }
     
-    protected TreeMap getColl() {
+    protected Map<ID, T> getColl() {
         if(intern == null)
-            intern = new TreeMap(comparator);//if comp == null -> natural order
+            intern = new TreeMap<ID, T>(comparator);//if comp == null -> natural order
         
         return intern;
     }
     
-    /** This methods provides the children of this class a simply
+    /** 
+     * This methods provides the children of this class a simply
      * use of this pool to add data. It is not possible to overwrite
      * an existing <tt>IDData</tt>.
      * @return specified data if this pool already contains it. And returns
-     * null if adding was succesfull.
+     * null if adding was NOT succesfull.
      */
-    protected IDData add(IDData data){
-        if(getColl().containsKey(data.getID()))
+    public <S extends T> S add(S data){
+        if(getColl().containsKey(data.getID())) {
             return data;
-        //IDData tmp = (IDData)
-                getColl().put(data.getID(), data);
+        }
+        
+        getColl().put(data.getID(), data);
         
         fireEvent(AbstractCollection.ADD_DATA, data.getID());
-        return null;
+        return data;
     }
     
     //CollectionInterface:
     
     public boolean remove(int index) {
-        Iterator iter = iterator();
-        IDData tmp;
+        Iterator<T> iter = iterator();
+        T tmp;
         for(int i=0; iter.hasNext(); i++) {
-            tmp=(IDData)iter.next();//if not-> IllegalStateException
+            tmp = iter.next();//if not-> IllegalStateException
             if(i == index) {
                 iter.remove();
-                fireEvent(AbstractCollection.REMOVE_DATA, tmp.getID());        
+                fireEvent(AbstractCollection.REMOVE_DATA, tmp.getID());
                 return true;
             }
         }
         return false;
     }
     
-    public Iterator iterator() {
+    public Iterator<T> iterator() {
         return getColl().values().iterator();
     }
     
@@ -114,21 +123,21 @@ class Pool extends AbstractCollection
     }
     
     public void clear() {
-        fireEvent(AbstractCollection.REMOVE_DATA, 0, size());        
+        fireEvent(AbstractCollection.REMOVE_DATA, 0, size());
         getColl().clear();
     }
     
     //PoolInterface:
     
-    public IDData get(Comparable id) {
-        return (IDData)getColl().get(id);
+    public T get(Comparable id) {
+        return getColl().get(id);
     }
     
-    public IDData get(int index) {
-        Iterator iter = iterator();
+    public T get(int index) {
+        Iterator<T> iter = iterator();
         
         for(int i=0; iter.hasNext(); i++) {
-            if(i == index) return (IDData)iter.next();
+            if(i == index) return iter.next();
             else iter.next();
         }
         
@@ -136,8 +145,8 @@ class Pool extends AbstractCollection
     }
     
     public boolean remove(Comparable id) {
-        IDData tmp = (IDData)getColl().remove(id);
-        if(tmp == null) 
+        T tmp = getColl().remove(id);
+        if(tmp == null)
             return false;
         
         fireEvent(AbstractCollection.REMOVE_DATA, tmp.getID());

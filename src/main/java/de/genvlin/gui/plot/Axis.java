@@ -18,6 +18,7 @@ import java.io.Serializable;
  * @author Peter Karich
  */
 public class Axis implements Serializable {
+    
     public static final int //TOP =3, DOWN = 4, LEFT = 5, RIGHT = 6,
             // POS_X = 7, NEG_X = 8, POS_Y = 9, NEG_Y = 10;
             X = 0, Y = 1;
@@ -31,25 +32,31 @@ public class Axis implements Serializable {
     static int xOffset = 50;
     static int yOffset = 50;
     
-    /** offset for description of x axis in Window coord
+    /** 
+     * offset for description of x axis in Window coord
      */
     private int x_xTextOff = -5;
     private int x_yTextOff = 40;
     
-    /** offset for description of y axis in Window coord
+    /**
+     * offset for description of y axis in Window coord
      */
     private int y_xTextOff = -40;
     private int y_yTextOff = 5;
     
-    /** how many scalers are on this axis:
+    /** 
+     * how many scalers are on this axis:
      */
     private int noOfScalers;
     
-    /** The default size in window coordinates
+    /**
+     * The default size in window coordinates
      */
     private int scalerSize = 8;
     
-    /** Creates a new instance of Axis
+    /**
+     * Creates a new instance of Axis
+     *
      * @param type needs one of POS_X NEG_X, POS_Y or NEG_Y
      * @param noOfScalers how many scaler shall be on this axis
      * @param cSys on which coordinate system we scale the axis
@@ -67,13 +74,15 @@ public class Axis implements Serializable {
         return type;
     }
     
-    /** This method returns the x offset of the origin
+    /** 
+     * This method returns the x offset of the origin
      */
     public int getXOffset() {
         return xOffset;
     }
     
-    /** This method returns the y offset of the origin
+    /** 
+     * This method returns the y offset of the origin
      */
     public int getYOffset() {
         return yOffset;
@@ -99,10 +108,11 @@ public class Axis implements Serializable {
         }
     }
     
-    /**  This method returns a beauty rounded (less fraction digist) distance from 'end' to 'start'.
-     * We can round distance, if we know how many fraction digits are important <p>
-     * e.g.: start=4321 and end=4311 and no=5 => dist/no = 10/5 = 2 => now we know all digits until 10^0 are important. No we can round distance!<p>
-     * e.g.2: start=0.442 and end=0.023 => dist/no =(ca) 0.419/5 = 0.084 => now we know all digits until 10^-2 are important.<p>
+    /** 
+     * This method returns a beauty rounded (less fraction digist) distance from 'end' to 'start'.
+     * We can round distance, if we know how many fraction digits are important <br>
+     * e.g.: start=4321 and end=4311 and no=5 => dist/no = 10/5 = 2 => now we know all digits until 10^0 are important. No we can round distance!<br>
+     * e.g.2: start=0.442 and end=0.023 => dist/no =(ca) 0.419/5 = 0.084 => now we know all digits until 10^-2 are important.<br>
      *
      * @param no contains the number of scalers which should be on the axis.
      */
@@ -121,13 +131,13 @@ public class Axis implements Serializable {
      * the actual properties of CoordinateSystem
      */
     public void draw(Graphics g) {
-        Point s=getStartPoint(), e= getEndPoint();
+        Point s = getStartPoint(), e = getEndPoint();
         
         drawScalers(g, s, e);
         g.drawLine(s.x, s.y, e.x, e.y);
     }
     
-    /** This method draw the scalers + its text<p>
+    /** This method draw the scalers + its text<br>
      * If you want to actualize : call automaticScale(newcoordinatebounds).
      */
     public void drawScalers(Graphics g, Point start, Point end) {

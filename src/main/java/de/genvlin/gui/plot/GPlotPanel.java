@@ -4,7 +4,12 @@
  * Created on 27. Juni 2004, 00:12
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,122 +28,157 @@
  */
 package de.genvlin.gui.plot;
 
-import de.genvlin.core.data.AbstractCollection;
 import de.genvlin.core.data.CollectionEvent;
 import de.genvlin.core.data.CollectionListener;
 import de.genvlin.core.data.ID;
 import de.genvlin.core.data.MainPool;
+import de.genvlin.core.data.Pool;
 import de.genvlin.core.data.VectorInterface;
-import de.genvlin.core.data.XYInterface;
-import de.genvlin.core.data.XYPool;
-import de.genvlin.core.util.GProperties;
-import de.genvlin.core.plugin.Log;
-import de.genvlin.core.plugin.Platform;
-import de.genvlin.core.plugin.PluginPool;
+import de.genvlin.core.data.XYDataInterface;
+import de.genvlin.core.data.XYVectorInterface;
+import de.genvlin.gui.util.ComponentContainer;
 import de.genvlin.gui.util.GMouseAdapter;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.plaf.ColorUIResource;
 
 /**
- * The main class for plotting the data in an extra panel. Its a very simple implemention of a plot
- * class!!
+ * The main class for plotting the data in an extra panel. It should be a very simple plot class
+ * with no extras.
  *
  * @author Peter Karich
  */
-public class GPlotPanel extends JPanel implements CollectionListener {
+public class GPlotPanel implements CollectionListener, ComponentContainer {
 
-    static final long serialVersionUID = 432233244;
-    public static int DISTANCE = 0, ZOOM = 1, NORMAL = 2;
-    private Color axesColor = Color.black, background = Color.white;
-    private Color dataColor[] = {new Color(0.0f, 0.0f, 0.5f),
-        new Color(0.0f, 0.5f, 0.0f),
-        new Color(0.5f, 0.0f, 0.0f),
-        new Color(0.5f, 0.5f, 0.0f),
-        new Color(0.0f, 0.5f, 0.5f),
-        new Color(0.5f, 0.0f, 0.5f),
-        new Color(0.5f, 0.5f, 0.5f)
-    };
-    //private ArrayList data = new ArrayList(10);//ArrayList<XYData>
-    //private boolean drawDistance;
+    private static final long serialVersionUID = 432233244L;
+    private static final int DO_NOT_SCALE = -1, SCALE_ALL = -2;
+    private double xTranslate = 1, yTranslate = 1;
+    private int xOff, yOff;
+    private int automaticScaleDataNo = DO_NOT_SCALE;
+    private Color axesColor;
+    private List<Color> dataColor;
     private CoordinateSystem defaultCS;
     private CoordinateSystem cSys;
     private PlotML plotML;
-    private int automaticScaleDataNo = -1;
-    private PopupSupportImpl popupSupport;
-    private XYPool pool;
+    private List<Component> popMenuList;
+    private Pool<XYDataInterface> pool;
+    private JPanel panel;
+    private int tmp, x1, x2, y1, y2;
     private int plotOne = -1;
 
-    public GPlotPanel(XYPool pool) {
-        if (pool == null) {
+    public GPlotPanel(Pool<XYDataInterface> p) {
+        if (p == null) {
             throw new UnsupportedOperationException("param pool shouldn't be null!");
         }
+        pool = p;
+        reloadPureXYInterfaceToXYData(0, getPool().size());
+        getPool().addVectorListener(this);
 
-        this.pool = pool;
-        reloadPureXYInterfaceToXYData(0, pool.size());
-        pool.addVectorListener(this);
-        setName("plot:" + pool.getID());
-        setToolTipText("<html>Measure distance per Mouse dragging.<br>"
-                + "Zoom with SHIFT + drag.<br>Translate with CTRL + drag.</html>");
-        //setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+        popMenuList = new ArrayList<Component>();
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.add(new JLabel("<html>"
+                + "Measure Distance With Mouse-Dragging.<br>"
+                + "Zoom With SHIFT + Drag.<br>"
+                + "Translate With CTRL + Drag.</html>"));
+
+        popMenuList.add(helpMenu);
+
+        panel = new JPanel() {
+
+            @Override
+            public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                paintPlot(g);
+            }
+        };
+        panel.setName("plot:" + getPool().getID());
+        panel.setMinimumSize(new Dimension(300, 300));
+        // if (!RepaintManager.currentManager(panel).isDoubleBufferingEnabled())
+
+        initColors();
         cSys = getDefaultCoordinateSystem();
+
+        ColorUIResource cr = (ColorUIResource) UIManager.get("Label.foreground");
+        if (cr == null) {
+            //black theme
+            axesColor = new Color(51, 51, 51);
+        } else {
+            //white theme
+            axesColor = new Color(cr.getRGB());
+        }
+
         cSys.setColor(axesColor);
-        cSys.setBackground(background);
-
-        setBackground(background);
-
         plotML = new PlotML();
-        addMouseListener(plotML);
-        addMouseMotionListener(plotML);
-        cSys.setWinBounds(getBounds());//this avoids null pointer exceptions
+        panel.addMouseListener(plotML);
+        panel.addMouseMotionListener(plotML);
+
+        //This avoids null pointer exceptions, in methods which uses autoscale
+        //or other methods depending on window bounds.
+        cSys.setWinBounds(panel.getBounds());
     }
 
     public GPlotPanel() {
-        this((XYPool) MainPool.getDefault().create(XYPool.class));
+        this(MainPool.getDefault().createPool(XYDataInterface.class));
     }
 
-    /**
-     * @return the standard coordinate bounds of the real coordinate and set the locale to default
-     * locale
-     */
-    public CoordinateSystem getDefaultCoordinateSystem() {
-        defaultCS = new CoordinateSystem(+10, +30, 0.5, 0.5);
-        defaultCS.setLocale((Locale) GProperties.getDefault().get("locale"));
-        return defaultCS;
+    protected void initColors() {
+        //30 should be sufficient
+        dataColor = new ArrayList<Color>(30);
+        //dataColor.add(Color.BLACK);
+        //dataColor.add(Color.WHITE);
+        dataColor.add(Color.BLUE.brighter());
+        dataColor.add(Color.RED);
+        dataColor.add(Color.ORANGE);
+        dataColor.add(Color.GREEN.darker());
+        dataColor.add(Color.PINK);
+        dataColor.add(Color.MAGENTA);
+        dataColor.add(Color.CYAN);
+        dataColor.add(Color.YELLOW.darker());
+        dataColor.add(Color.GRAY);
+        int size = dataColor.size();
+
+        for (int i = 0; i < size; i++) {
+            dataColor.add(dataColor.get(i).darker());
+        }
+
+        for (int i = 0; i < size; i++) {
+            dataColor.add(dataColor.get(i).brighter());
+        }
     }
 
-    /**
-     * This method sets the locale (=> and the numberformat).
-     */
-    public void setLocale(Locale locale) {
-        cSys.setLocale(locale);
+    public final Pool<XYDataInterface> getPool() {
+        return pool;
     }
-    int tmp, x1, x2, y1, y2;
 
-    /**
-     * Overload JPanel.paint
-     */
-    public void paint(Graphics g) {
-        super.paint(g);
-        cSys.setWinBounds(getBounds());
+    protected void paintPlot(Graphics g) {
+        cSys.setWinBounds(panel.getBounds());
 
         //now automatic scaling for only one time!!
-        automaticScale(automaticScaleDataNo);
-        automaticScaleDataNo = -1;
+        _automaticScale(automaticScaleDataNo);
+        automaticScaleDataNo = DO_NOT_SCALE;
 
         cSys.drawAxes(g);
+        cSys.drawMousePosition(g, plotML.currPoint);
+
         //plotFunction(g);
         plotData(g);
 
-        cSys.drawMousePosition(g, plotML.currPoint);
-        if (plotML.isDistancing())
+        if (plotML.isDistancing()) {
             cSys.drawMouseDistance(g, plotML.distPoint, plotML.currPoint);
+        }
+
         if (plotML.isZooming()) {
             x1 = plotML.zoomPoint.x;
             y1 = plotML.zoomPoint.y;
@@ -154,102 +194,169 @@ public class GPlotPanel extends JPanel implements CollectionListener {
                 y1 = y2;
                 y2 = tmp;
             }
-
+            g.setColor(axesColor);
             g.drawRect(x1, y1, x2 - x1, y2 - y1);
         }
     }
-    /*
-     * public void addFunction() { }
-     *
-     * public void plotFunction(Graphics g) { int a;
-     *
-     * g.setColor(functionColor); for(int i=0; i<cB.dX(); i++) { a=yToWin(fkt(xToCoord(i)));
-     * //Log.log("a "+a+"; fkt(xToCoord(i)) "+fkt(xToCoord(i)) +"; xToCoord(i) "+xToCoord(i)+"; i
-     * "+i); xyPoint.draw(g, i, a); } }
-     */
-    int colorDataIndex = 0;
 
     /**
-     * which dataset has which color??
+     * @return the standard coordinate bounds of the real coordinate and set the locale to default
+     * locale
      */
-    public Color getColor(int index) {
-        return ((XYData) pool.get(index)).getColor();
+    public CoordinateSystem getDefaultCoordinateSystem() {
+        defaultCS = new CoordinateSystem(+10, +30, 0.5, 0.5);
+        return defaultCS;
     }
 
     /**
-     * This method adds a plot(with x AND y values) to the window
-     *
-     * public void addData(double x[], double y[]) { int color = colorDataIndex; color %=
-     * dataColor.length; data.add(new XYData(x, y, XYData.CROSS, dataColor[color], data.size()+""));
-     *
-     * colorDataIndex++; }
+     * This method sets the locale (=> and the numberformat).
      */
+    public void setAxesNumberFormat(Locale locale, int maxDigits) {
+        cSys.setAxesNumberFormat(locale, maxDigits);
+    }
+
+    public void clearColor() {
+        dataColor.clear();
+    }
+
+    public void addColor(Color color) {
+        dataColor.add(color);
+    }
+    int colorDataIndex = 0;
+
     /**
-     * This method adds specified data to panel
-     *
-     * public void addData(XYData xyData) { int color = colorDataIndex;
-     * automaticOneScale(colorDataIndex); color %= dataColor.length;
-     * xyData.setColor(dataColor[color]); xyData.setDotType(XYData.CROSS);
-     * xyData.setName(data.size()+""); data.add(xyData); colorDataIndex++; }
+     * Which dataset has which color??
      */
+    public Color getColor(int index) {
+        return getPool().get(index).getColor();
+    }
+
+    public void setPlotOne(int index) {
+        plotOne = index;
+    }
+
     /**
      * This method adds specified data to panel
      */
     public void addData(VectorInterface xVector, VectorInterface yVector) {
-        addData(new XYData(xVector, yVector));
+        initXYData(MainPool.getDefault().createXYData(xVector, yVector));
+    }
+
+    /**
+     * This method adds specified xVector as x values and yVector as y values to the panel.
+     *
+     * @param title specifies the titled of this xy plot.
+     */
+    public void addData(VectorInterface xVector, VectorInterface yVector, String title) {
+        XYDataInterface xyData = MainPool.getDefault().createXYData(xVector, yVector);
+        xyData.setTitle(title);
+        initXYData(xyData);
     }
 
     /**
      * This method adds specified data to panel
      */
-    public void addData(XYInterface xyVector) {
-        if (xyVector instanceof XYData)
-            addData((XYData) xyVector);
-        else
-            addData(new XYData(xyVector));
+    public void addData(XYVectorInterface xyVector) {
+        initXYData(MainPool.getDefault().createXYData(xyVector));
     }
 
-    public void addData(XYData xyData) {
+    /**
+     * This method adds specified data to panel
+     */
+    public void addData(XYDataInterface xyData) {
+        initXYData(xyData);
+    }
+
+    protected void initXYData(XYDataInterface xyData) {
+        if (xyData.getTitle() == null || xyData.getTitle().length() == 0) {
+            xyData.setTitle("Data:" + getPool().size());
+        }
         int color = colorDataIndex;
         automaticOneScale(colorDataIndex);
-        color %= dataColor.length;
-        xyData.setColor(dataColor[color]);
-        xyData.setDotType(XYData.CROSS);
-        pool.add(xyData);
+        color %= dataColor.size();
+        xyData.setColor(dataColor.get(color));
         colorDataIndex++;
+        getPool().add(xyData);
     }
 
-    public void plotOne(int data) {
-        plotOne = data;
+    public XYDataInterface getData(int index) {
+        return getPool().get(index);
+    }
+
+    public XYDataInterface getData(String str) {
+        int index = indexOf(str);
+        if (index >= 0) {
+            return getPool().get(index);
+        }
+
+        return null;
     }
 
     /**
-     * This method removes a plot from the plotwindow
+     * This method removes the specified plot from this plotwindow.
+     */
+    public void hideData(String str) {
+        int i = indexOf(str);
+        if (i > -1) {
+            XYDataInterface xyData = (XYDataInterface) getPool().get(i);
+            xyData.setHidden(!xyData.isHidden());
+        }
+    }
+
+    /**
+     * This method removes an entire plot from this plotwindow.
      */
     public void removeData(int i) {
-        pool.remove(i);
+        getPool().remove(i);
     }
-    int xOff, yOff;
 
     /**
-     * This method plots all datatables to the window. todo: performance!!!
+     * This method removes the specified plot from this plotwindow.
      */
-    private void plotData(Graphics g) {
+    public void removeData(String str) {
+        int i = indexOf(str);
+        if (i > -1) {
+            removeData(i);
+        }
+    }
+
+    /**
+     * This method removes the points from a plot.
+     */
+    public void clearData(int i) {
+        if (i < getPool().size()) {
+            getPool().get(i).clear();
+        }
+    }
+
+    /**
+     * This method removes all data sets from plot panel.
+     */
+    public void clear() {
+        getPool().clear();
+    }
+
+    /**
+     * This method plots all datasets to the window.
+     */
+    protected void plotData(Graphics g) {
         xOff = cSys.getYAxis().getXOffset();
         yOff = cSys.getXAxis().getYOffset();
         g.setClip(xOff, yOff, cSys.winWidth() - 2 * xOff, cSys.winHeight() - 2 * yOff);
+        XYDataInterface xyData;
 
-        if (plotOne >= 0)
-            ((XYData) pool.get(plotOne)).draw(g, cSys);
-        else
-            for (int plot = 0; plot < pool.size(); plot++) {
-                ((XYData) pool.get(plot)).draw(g, cSys);
+        if (plotOne >= 0) {
+            xyData = (XYDataInterface) getPool().get(plotOne);
+            xyData.draw(g, cSys);
+        } else
+            for (int c = 0; c < getPool().size(); c++) {
+                xyData = (XYDataInterface) getPool().get(c);
+                xyData.draw(g, cSys);
             }
 
         //reset clipping area:
         g.setClip(0, 0, cSys.winWidth(), cSys.winHeight());
     }
-    double xTranslate = 1, yTranslate = 1;
 
     /**
      * This method sets the mouse translate factor
@@ -259,35 +366,90 @@ public class GPlotPanel extends JPanel implements CollectionListener {
         yTranslate = yFactor;
     }
 
-    /**
-     * This method scales the window so that we can see the specified data * (in the most cases)
-     * very good.
-     */
-    protected void automaticScale(int index) {
-        if (pool.size() == 0 || index >= pool.size() || index < 0)
-            return;
+    protected int indexOf(String str) {
+        if (str != null) {
+            for (int i = 0; i < getPool().size(); i++) {
+                if (str.equals(getPool().get(i).getTitle())) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
 
-        XYData xyData = (XYData) pool.get(index);
-
-        cSys.automaticScale(xyData.getMinX(), xyData.getMaxX(),
-                xyData.getMinY(), xyData.getMaxY());
-        repaint();
+    private boolean automaticScale(String subString) {
+        return _automaticScale(indexOf(subString));
     }
 
     /**
-     * This method scales the window so that we can see the last added data * (in the most cases)
-     * very good.
+     * This method scales the window so that we can see the specified data (in the most cases) very
+     * good.
+     *
+     * protected boolean automaticScale(int index) { if(_automaticScale(index)) { repaint(); return
+     * true; }
+     *
+     * return false; }
      */
-    protected void automaticScale() {
-        automaticScale(pool.size() - 1);
+    private boolean _automaticScale(int index) {
+        if (getPool().size() == 0 || index >= getPool().size()) {
+            return false;
+        }
+
+        if (index == SCALE_ALL) {
+            double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
+            double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+
+            for (int i = 0; i < getPool().size(); i++) {
+                if (((XYDataInterface) getPool().get(i)).isHidden()) {
+                    continue;
+                }
+
+                if (minX > getPool().get(i).getMinX().doubleValue()) {
+                    minX = getPool().get(i).getMinX().doubleValue();
+                }
+
+                if (maxX < getPool().get(i).getMaxX().doubleValue()) {
+                    maxX = getPool().get(i).getMaxX().doubleValue();
+                }
+
+                if (minY > getPool().get(i).getMinY().doubleValue()) {
+                    minY = getPool().get(i).getMinY().doubleValue();
+                }
+
+                if (maxY < getPool().get(i).getMaxY().doubleValue()) {
+                    maxY = getPool().get(i).getMaxY().doubleValue();
+                }
+            }
+
+            cSys.automaticScale(minX, maxX, minY, maxY);
+        } else if (index < 0) {
+            return false;
+        } else {
+            XYDataInterface xyData = getPool().get(index);
+            cSys.automaticScale(xyData.getMinX().doubleValue(), xyData.getMaxX().doubleValue(),
+                    xyData.getMinY().doubleValue(), xyData.getMaxY().doubleValue());
+        }
+
+        return true;
     }
 
     /**
      * This method sets the data in this plotpanel which should scaled automatically for one time.
-     * -1 indicates that no scaling will happen.
+     * -1 indicates that no scaling will happen. This works only if panel has a size != 0. This
+     * means you have to realize the component first.
      */
     public void automaticOneScale(int dataNo) {
         automaticScaleDataNo = dataNo;
+    }
+
+    /**
+     * This method scales the plot window so that all datasets are visible.
+     */
+    public void automaticScaleAll() {
+        //Workaround: to let autoscaling directly after importing datasets (nlo)
+        //Sometimes we need to set bounds before autoscaling.
+        //Only if pane.width > 0 and height > 0 cSys.automaticScale will work.
+        automaticScaleDataNo = SCALE_ALL;
     }
 
     /**
@@ -296,13 +458,14 @@ public class GPlotPanel extends JPanel implements CollectionListener {
      */
     private class PlotML extends GMouseAdapter implements MouseMotionListener, Serializable {
 
-        int clickButton = -1;
-        public Point changeVector = new Point();
-        public Point clickPoint = new Point();
-        public Point currPoint = new Point();
-        public Point zoomPoint = new Point();
-        public Point distPoint = new Point();
-        int state = NORMAL;
+        private static final int DISTANCE = 0, ZOOM = 1, NORMAL = 2;
+        private int clickButton = -1;
+        private Point changeVector = new Point();
+        private Point clickPoint = new Point();
+        private Point currPoint = new Point();
+        private Point zoomPoint = new Point();
+        private Point distPoint = new Point();
+        private int state = NORMAL;
         double tmpX, tmpY, xP, yP;
 
         public boolean isZooming() {
@@ -317,42 +480,47 @@ public class GPlotPanel extends JPanel implements CollectionListener {
             return state == NORMAL;
         }
 
+        @Override
         public void gMousePressed(MouseEvent me) {
-            clickPoint.x = me.getPoint().x;
-            clickPoint.y = me.getPoint().y;
+            clickPoint.x = me.getX();
+            clickPoint.y = me.getY();
+            clickButton = me.getButton();
 
             if (me.isShiftDown() && clickButton == me.BUTTON1) {
-                zoomPoint.x = me.getPoint().x;
-                zoomPoint.y = me.getPoint().y;
+                zoomPoint.x = me.getX();
+                zoomPoint.y = me.getY();
 
                 state = ZOOM;
                 cSys.setZoomStart(zoomPoint);
             } else {
                 state = DISTANCE;
 
-                distPoint.x = me.getPoint().x;
-                distPoint.y = me.getPoint().y;
+                distPoint.x = me.getX();
+                distPoint.y = me.getY();
             }
-            clickButton = me.getButton();
         }
 
+        @Override
         public void gMouseReleased(MouseEvent me) {
             if (isZooming()) {
-                cSys.zoom(currPoint.x, currPoint.y);
+                cSys.zoom(me.getX(), me.getY());
                 repaint();
             }
             state = NORMAL;
         }
 
         public void mouseMoved(MouseEvent me) {
-            currPoint.x = me.getPoint().x;
-            currPoint.y = me.getPoint().y;
-            repaint();
+            //avoid to much repaint, because this would be a performance issue!
+            if (!consume(me)) {
+                currPoint.x = me.getX();
+                currPoint.y = me.getY();
+                repaint();
+            }
         }
 
         public void mouseDragged(MouseEvent me) {
-            currPoint.x = me.getPoint().x;
-            currPoint.y = me.getPoint().y;
+            currPoint.x = me.getX();
+            currPoint.y = me.getY();
             changeVector.x = currPoint.x - clickPoint.x;
             changeVector.y = currPoint.y - clickPoint.y;
 
@@ -371,121 +539,153 @@ public class GPlotPanel extends JPanel implements CollectionListener {
             }
         }
 
+        @Override
         public void showPopup(MouseEvent me) {
-            if (popupSupport == null)
-                popupSupport = new PopupSupportImpl(me);
-            else
-                popupSupport.setMouseEvent(me);
-
-            PluginPool.getDefault().getPlatform().showPopup(popupSupport);
+            JPopupMenu pm = getNewPopMenu();
+            pm.show(me.getComponent(), me.getX(), me.getY());
         }
     }//PlotML
 
-    protected class PopupSupportImpl implements Platform.PopupSupport {
+    public boolean consume(MouseEvent me) {
+        return false;
+    }
 
-        public PopupSupportImpl(MouseEvent me) {
-            setMouseEvent(me);
-        }
+    public void repaint() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(new Runnable() {
 
-        public JPopupMenu createPopup() {
-            return GPlotPanel.this.createPopup(me);
-        }
-
-        private void setMouseEvent(MouseEvent me) {
-            this.me = me;
-        }
-        MouseEvent me;
-
-        public MouseEvent getMouseEvent() {
-            return me;
-        }
-
-        public boolean isPopupAllowed() {
-            return true;
+                public void run() {
+                    panel.repaint();
+                }
+            });
+        } else {
+            panel.repaint();
         }
     }
 
-    /**
-     * This will create the context sensitive popup menu on this plot panel.
-     */
-    public JPopupMenu createPopup(MouseEvent me) {
+    public Component getComponent() {
+        return panel;
+    }
+    private static final String automaticScalingString = "Automatic Scaling";
+    private static final String removeString = "Remove";
+    private static final String hideString = "Hide/Show";
+
+    private synchronized JPopupMenu getNewPopMenu() {
+        /*
+         * Why does this not work: create a static popMenu, add dynamic stuff like data-scaling? the
+         * created static popMenu will be empty on a second call!?
+         */
         JPopupMenu popMenu = new JPopupMenu();
 
-        for (int i = 0; i < pool.size(); i++) {
+        //clone
+        for (Component comp : popMenuList) {
+            popMenu.add(comp);
+        }
+
+        for (int i = 0; i < getPool().size(); i++) {
+            final String str = getPool().get(i).getTitle();
+            JMenu menu = new JMenu(str);
+            menu.setForeground(getColor(i));
+
             final int fin = i;
-            JMenu menu = new JMenu(i + " " + pool.get(i));
             menu.addMouseListener(new MouseAdapter() {
 
                 @Override public void mouseEntered(MouseEvent e) {
-                    plotOne(fin);
+                    setPlotOne(fin);
                     repaint();
                 }
 
                 @Override public void mouseExited(MouseEvent e) {
-                    plotOne(-1);
+                    setPlotOne(-1);
                     repaint();
                 }
             });
-            menu.setForeground(getColor(i));
-            menu.add(new AbstractAction("Automatic scaling") {
+
+            menu.add(new AbstractAction(automaticScalingString) {
 
                 public void actionPerformed(ActionEvent e) {
-                    automaticOneScale(fin);
+                    automaticScale(str);
                     repaint();
                 }
             });
-            menu.add(new AbstractAction("Remove") {
+
+            menu.add(new AbstractAction(hideString) {
 
                 public void actionPerformed(ActionEvent e) {
-                    removeData(fin);
+                    hideData(str);
                     repaint();
                 }
             });
+
+            menu.add(new AbstractAction(removeString) {
+
+                public void actionPerformed(ActionEvent e) {
+                    removeData(str);
+                    repaint();
+                }
+            });
+
             popMenu.add(menu);
         }
-        if (pool.size() == 0)
-            popMenu.add(new JMenuItem("no data yet"));
 
+        //scale + remove for all datasets:
+        JMenu menu = new JMenu("All");
+        menu.add(new AbstractAction(automaticScalingString) {
+
+            public void actionPerformed(ActionEvent e) {
+                automaticScaleAll();
+                repaint();
+            }
+        });
+
+        menu.add(new AbstractAction(removeString) {
+
+            public void actionPerformed(ActionEvent e) {
+                clear();
+                repaint();
+            }
+        });
+
+        popMenu.add(menu);
         return popMenu;
     }
 
-    private boolean reloadPureXYInterfaceToXYData(ID id) {
-        XYInterface data;
-        try {
-            data = (XYInterface) pool.get(id);
-        } catch (ClassCastException cce) {
-            Log.err("Cant'add data with id " + id.toString() + " to pool.", false);
-            return false;
-        }
-        pool.removeVectorListener(this);
-        pool.remove(id);
-        addData(data);
-        pool.addVectorListener(this);
-        return true;
+    /**
+     * User can add here its menuitems.
+     */
+    public synchronized void addPopElement(Component comp) {
+        popMenuList.add(comp);
+    }
+
+    /**
+     * This method returns the mathmetical bounds of the current zoomed state of this plot panel.
+     */
+    public Rectangle2D.Double getZoomedRectangle() {
+        return cSys.getMathBounds();
     }
 
     private boolean reloadPureXYInterfaceToXYData(int from, int to) {
-        XYInterface data;
+        XYDataInterface data;
+        getPool().removeVectorListener(this);
         for (int index = from; index < to; index++) {
             try {
-                data = (XYInterface) pool.get(index);
+                data = getPool().get(index);
             } catch (ClassCastException cce) {
-                Log.err("Cant'add data with index " + index + " to pool.", false);
-                return false;
+                throw new RuntimeException(cce);
             }
-            pool.remove(index);
+            getPool().remove(index);
             addData(data);
         }
+        getPool().addVectorListener(this);
         return true;
     }
 
     public void vectorChanged(CollectionEvent ve) {
-        if (ve.getProperty() == AbstractCollection.ADD_DATA
-                || ve.getProperty() == AbstractCollection.ADD_SOME) {
-            if (ve.getID() != null)
-                reloadPureXYInterfaceToXYData(ve.getID());
-            else
-                reloadPureXYInterfaceToXYData(ve.getFrom(), ve.getTo());
-        }
+        /*
+         * if(ve.getProperty() == AbstractCollection.ADD_DATA || ve.getProperty() ==
+         * AbstractCollection.ADD_SOME) { if(ve.getID()!=null) {
+         * reloadPureXYInterfaceToXYData(ve.getID()); } else {
+         * reloadPureXYInterfaceToXYData(ve.getFrom(), ve.getTo()); } }
+         */
     }
 }

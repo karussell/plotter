@@ -1,10 +1,15 @@
 /*
  * PoolInterface.java
  *
- * Created on 18. März 2006, 20:14
+ * Created on 18. March 2006, 20:14
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +36,7 @@ package de.genvlin.core.data;
  *
  * @author Peter Karich
  */
-public interface PoolInterface extends CollectionInterface {
+public interface PoolInterface<T extends IDData> extends CollectionInterface {
     
     /** This method adds the specified comparable to the pool.
      */
@@ -48,13 +53,13 @@ public interface PoolInterface extends CollectionInterface {
      * <pre>boolean contains(Comparable comp)</pre>. If <tt>null</tt>
      * is returned this indicates "not found".
      */
-    public IDData get(Comparable id);
+    public T get(Comparable id);
     
     /** This method returns the i-th element in the pool. And the
      * value <tt>null</tt> if not found or if index is not valid.
      * The order comes from the ID's (Comparable).
      */
-    public IDData get(int index);
+    public T get(int index);
     
     /** This method returns the index of <tt>IDData</tt> 
      * with specifid <tt>ID</tt> or <tt>Comparable</tt>. 

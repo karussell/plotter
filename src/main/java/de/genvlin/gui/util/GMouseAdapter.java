@@ -4,7 +4,12 @@
  * Created on 9. April 2006, 23:31
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +32,8 @@ package de.genvlin.gui.util;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-/** Use the gMouse* method instead of mouse*! To provide popup
+/** 
+ * Uses the gMouse* method instead of mouse*! To provide popup
  * abilities override showPopup.
  * @see #showPopup
  *

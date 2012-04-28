@@ -1,10 +1,15 @@
 /*
  * IDData.java
  *
- * Created on 8. März 2006, 23:15
+ * Created on 8. March 2006, 23:15
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +35,7 @@ package de.genvlin.core.data;
  *
  * @author Peter Karich 
  */
-public interface IDData extends Comparable
+public interface IDData extends Comparable<IDData>
 {
     /** This method returns the identification.
      * @return id of this special dataobject */    

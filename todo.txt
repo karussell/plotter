@@ -1,0 +1,40 @@
+Requirements:
+    we should allow null values! So we can't call getDouble as standard behaviour!
+    performance! fast! 
+    size! small size!
+
+To Do:     
+
+. discovered a visualization bug in genvlin-plotter:
+    the current value (in nlo) is correct e.g. 1e-3,
+    but genvlin plots 1e-4 or somewhat smaller
+. Problem -> in plotter: Pool contains XYDataInterface's (initXYData), 
+    but MainPool contains their XYVectorInterface's (MainPool.createXYVector)
+    should XYData inherit the id? or has its own?
+. LivePlotPanel: don't autoscale if translating, zooming or dragging
+. print title of x and y axis if specified
+. right alignment of the y axis labels
+. PERFORMANCE:
+    drawMouseDistance is slow (called too many times)
+    translating is slow: CoordSys.drawAxes => Axis.draw => Axis.drawScalers
+. NumberFormat:
+    if we change precision of numberformat we should change textoffset's in Axis   
+    calculate how many scalers we need to avoid overlapping if detailed number format -> see CoordinateSystem
+    can't display small values (10^-6)
+    can't display y values (x, too?), which have only a small difference
+. create an 'update thread' for plotter
+
+
+21.05.07: 2h introduced generics: removed CollectionIDEvent, StringNumber, changed method return type of XYPool.add + VectorPool.add, changed: ID, Pool, MainPool, VectorInterface, DataVector, XYVector, XYVectorInterface; changed automaticScale so that we don't repaint again from paint(); fixed bug in DataVector.getMin/getMax
+??.??:    ?h access xyData by string not by integer
+07.07:    ?h allow autoscale so that all dataset visible and autoscale to any region
+09.07:    ?h zooming has wrong color
+15.07:    5h override paintComponent instead paint in GPlotPanel.panel; removed outcommented code in XYData; removed automaticScale for last added xydata set; commented out GPlotPanel.vectorChanged; new class LivePlotPanel good for gstpl and nlo; if we have mouse motion -> plotter seemed to block, changed amount of mousemotion events which could trigger a repaint and the repaint is very expensive; 
+             added 'keep data points' checkbox to optionspanel; 
+             added 'enable plotter' to reduce memory usage if user wants this
+17.07:    1h new colors; faster translating plotpanel (formatting numbers is now faster)
+27.07:    4h updated copyright information in source header; hide XYData with the XYDataInterface to add hidden, color, ... useful method from XYData
+             added classes to decorate GPlotPanel with strings;
+             added faster max/min to DoubleVector
+
+08.01.2008 1h fixed bug (with popmenu) that makes it impossible to rescale a plot

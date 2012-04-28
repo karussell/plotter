@@ -1,10 +1,15 @@
 /*
  * IntID.java
  *
- * Created on 17. März 2006, 21:05
+ * Created on 17. March 2006, 21:05
  *
  * genvlin project.
- * Copyright (C) 2005, 2006 Peter Karich.
+ * Copyright (C) 2005 - 2007 Peter Karich.
+ *
+ * The initial version for the genvlin plotter you will find here:
+ * http://genvlin.berlios.de/
+ * The current release you will find here:
+ * http://nlo.wiki.sourceforge.net/
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,9 +41,10 @@ public class IntID implements ID {
         this.i = i;
     }
     
-    public int compareTo(Object o) {
-        if(!(o instanceof IntID)) 
+    public int compareTo(ID o) {
+        if(!(o instanceof IntID)) {
             return toString().compareTo(o.toString());
+        }
         
         //only for the special case:
         int tmp = ((IntID) o).i;
@@ -56,6 +62,6 @@ public class IntID implements ID {
             return toString().equals(obj.toString());
         
         //only for the special case:
-        return i== ((IntID)obj).i;
+        return i == ((IntID)obj).i;
     }
 }
