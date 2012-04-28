@@ -73,7 +73,7 @@ public class GPlotPanel extends JPanel implements CollectionListener {
     private int automaticScaleDataNo = -1;
     private PopupSupportImpl popupSupport;
     private XYPool pool;
-    private int lastPlot = -1;
+    private int plotOne = -1;
 
     public GPlotPanel(XYPool pool) {
         if (pool == null) {
@@ -219,8 +219,8 @@ public class GPlotPanel extends JPanel implements CollectionListener {
         colorDataIndex++;
     }
 
-    public void moveDataToFront(int data) {
-        lastPlot = data;
+    public void plotOne(int data) {
+        plotOne = data;
     }
 
     /**
@@ -238,13 +238,13 @@ public class GPlotPanel extends JPanel implements CollectionListener {
         xOff = cSys.getYAxis().getXOffset();
         yOff = cSys.getXAxis().getYOffset();
         g.setClip(xOff, yOff, cSys.winWidth() - 2 * xOff, cSys.winHeight() - 2 * yOff);
-        
-        for (int plot = 0; plot < pool.size(); plot++) {
-            if (lastPlot != plot)
+
+        if (plotOne >= 0)
+            ((XYData) pool.get(plotOne)).draw(g, cSys);
+        else
+            for (int plot = 0; plot < pool.size(); plot++) {
                 ((XYData) pool.get(plot)).draw(g, cSys);
-        }
-        if (lastPlot >= 0)
-            ((XYData) pool.get(lastPlot)).draw(g, cSys);
+            }
 
         //reset clipping area:
         g.setClip(0, 0, cSys.winWidth(), cSys.winHeight());
@@ -417,7 +417,12 @@ public class GPlotPanel extends JPanel implements CollectionListener {
             menu.addMouseListener(new MouseAdapter() {
 
                 @Override public void mouseEntered(MouseEvent e) {
-                    moveDataToFront(fin);
+                    plotOne(fin);
+                    repaint();
+                }
+
+                @Override public void mouseExited(MouseEvent e) {
+                    plotOne(-1);
                     repaint();
                 }
             });
