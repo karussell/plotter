@@ -35,5 +35,28 @@
             <layout>default</layout>
             <name>Repository for library Library[swing-layout]</name>
         </repository>
-    </repositories>
+    </repositories>    
+    <build>        
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>    
+    <distributionManagement>
+        <snapshotRepository>
+            <id>karussell_snapshots</id>
+            <url>https://github.com/karussell/mvnrepo/raw/master/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>karussell_releases</id> 
+            <url>https://github.com/karussell/mvnrepo/raw/master/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
