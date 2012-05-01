@@ -8,7 +8,6 @@ package de.genvlin.gui.plot;
 
 import de.genvlin.core.data.CollectionEvent;
 import de.genvlin.core.data.CollectionListener;
-import de.genvlin.core.data.ID;
 import de.genvlin.core.data.MainPool;
 import de.genvlin.core.data.Pool;
 import de.genvlin.core.data.VectorInterface;
@@ -27,8 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 
@@ -250,7 +247,7 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
             xyData.setTitle("Data:" + getPool().size());
         }
         int color = colorDataIndex;
-        automaticOneScale(colorDataIndex);
+        // automaticOneScale(colorDataIndex);
         color %= dataColor.size();
         xyData.setColor(dataColor.get(color));
         colorDataIndex++;
@@ -273,10 +270,9 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
     /**
      * This method removes the specified plot from this plotwindow.
      */
-    public void hideData(String str) {
-        int i = indexOf(str);
-        if (i > -1) {
-            XYDataInterface xyData = (XYDataInterface) getPool().get(i);
+    public void hideData(int index) {
+        if (index > -1) {
+            XYDataInterface xyData = (XYDataInterface) getPool().get(index);
             xyData.setHidden(!xyData.isHidden());
         }
     }
@@ -286,16 +282,6 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
      */
     public void removeData(int i) {
         getPool().remove(i);
-    }
-
-    /**
-     * This method removes the specified plot from this plotwindow.
-     */
-    public void removeData(String str) {
-        int i = indexOf(str);
-        if (i > -1) {
-            removeData(i);
-        }
     }
 
     /**
@@ -344,7 +330,7 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
         yTranslate = yFactor;
     }
 
-    protected int indexOf(String str) {
+    public int indexOf(String str) {
         if (str != null) {
             for (int i = 0; i < getPool().size(); i++) {
                 if (str.equals(getPool().get(i).getTitle())) {
@@ -353,10 +339,6 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
             }
         }
         return -1;
-    }
-
-    private boolean automaticScale(String subString) {
-        return _automaticScale(indexOf(subString));
     }
 
     /**
@@ -544,9 +526,6 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
     public Component getComponent() {
         return panel;
     }
-    private static final String automaticScalingString = "Automatic Scaling";
-    private static final String removeString = "Remove";
-    private static final String hideString = "Hide/Show";
 
     private synchronized JPopupMenu getNewPopMenu() {
         /*
@@ -560,55 +539,7 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
             popMenu.add(comp);
         }
 
-        for (int i = 0; i < getPool().size(); i++) {
-            final String str = getPool().get(i).getTitle();
-            JMenu menu = new JMenu(str);
-            menu.setForeground(getColor(i));
-
-            final int fin = i;
-            menu.addMouseListener(new MouseAdapter() {
-
-                @Override public void mouseEntered(MouseEvent e) {
-                    setPlotOne(fin);
-                    repaint();
-                }
-
-                @Override public void mouseExited(MouseEvent e) {
-                    setPlotOne(-1);
-                    repaint();
-                }
-            });
-
-            menu.add(new AbstractAction(automaticScalingString) {
-
-                public void actionPerformed(ActionEvent e) {
-                    automaticScale(str);
-                    repaint();
-                }
-            });
-
-            menu.add(new AbstractAction(hideString) {
-
-                public void actionPerformed(ActionEvent e) {
-                    hideData(str);
-                    repaint();
-                }
-            });
-
-            menu.add(new AbstractAction(removeString) {
-
-                public void actionPerformed(ActionEvent e) {
-                    removeData(str);
-                    repaint();
-                }
-            });
-
-            popMenu.add(menu);
-        }
-
-        //scale + remove for all datasets:
-        JMenu menu = new JMenu("All");
-        menu.add(new AbstractAction(automaticScalingString) {
+        popMenu.add(new AbstractAction("Autoscale all") {
 
             public void actionPerformed(ActionEvent e) {
                 automaticScaleAll();
@@ -616,15 +547,66 @@ public class GPlotPanel implements CollectionListener, ComponentContainer {
             }
         });
 
-        menu.add(new AbstractAction(removeString) {
+        for (int i = 0; i < getPool().size(); i++) {
+            final String str = getPool().get(i).getTitle();
+            JMenu menu = new JMenu(str);
+            menu.setForeground(getColor(i));
 
-            public void actionPerformed(ActionEvent e) {
-                clear();
-                repaint();
-            }
-        });
+            final int fin = i;
+//            menu.addMouseListener(new MouseAdapter() {
+//
+//                @Override public void mouseEntered(MouseEvent e) {
+//                    setPlotOne(fin);
+//                    repaint();
+//                }
+//
+//                @Override public void mouseExited(MouseEvent e) {
+//                    setPlotOne(-1);
+//                    repaint();
+//                }
+//            });
 
-        popMenu.add(menu);
+            menu.add(new AbstractAction("Show All/Only This") {
+
+                public void actionPerformed(ActionEvent e) {
+                    if (plotOne >= 0 && plotOne == fin) {
+                        setPlotOne(-1);
+                        automaticOneScale(SCALE_ALL);
+                    } else {
+                        setPlotOne(fin);
+                        automaticOneScale(fin);
+                    }
+                    repaint();
+                }
+            });
+
+            menu.add(new AbstractAction("Hide/Show") {
+
+                public void actionPerformed(ActionEvent e) {
+                    hideData(fin);
+                    repaint();
+                }
+            });
+
+            menu.add(new AbstractAction("Automatic Scaling") {
+
+                public void actionPerformed(ActionEvent e) {
+                    automaticOneScale(fin);
+                    repaint();
+                }
+            });
+
+            menu.add(new AbstractAction("Remove") {
+
+                public void actionPerformed(ActionEvent e) {
+                    removeData(fin);
+                    repaint();
+                }
+            });
+
+            popMenu.add(menu);
+        }
+
         return popMenu;
     }
 

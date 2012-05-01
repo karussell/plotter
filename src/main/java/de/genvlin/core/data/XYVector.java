@@ -159,6 +159,14 @@ class XYVector extends AbstractCollection
         x.removeVectorListener(vl);
         y.removeVectorListener(vl);
     }
+
+    public VectorInterface getX() {
+        return x;
+    }
+
+    public VectorInterface getY() {
+        return y;
+    }
     
     /** The Iterator on Point.Double.
      */

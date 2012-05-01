@@ -14,6 +14,11 @@ package de.genvlin.core.data;
 public interface HistogrammInterface extends VectorInterface {
     
     /**
+     * @return sum of all entries
+     */
+    double getSum();
+    
+    /**
      * This method returns the root mean squared error of all added values. <br>
      * The definition is RMSError = sqrt[ sum_i_to_n((x_i - x_mean)^2) / n] <br>
      * Also known as the second central moment or variance.

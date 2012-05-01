@@ -40,8 +40,14 @@ public interface VectorInterface extends CollectionInterface {
      */
     public Number set(int i, Number n);
     
+    /**
+     * @return the minimal entry in this object
+     */
     public Number getMin();
     
+    /**
+     * @return the maximal entry in this object
+     */
     public Number getMax();
         
     /**

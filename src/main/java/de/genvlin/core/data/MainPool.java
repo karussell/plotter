@@ -10,6 +10,8 @@ package de.genvlin.core.data;
 /** This is the factory of pool's, vector's and xyvector's. Or you
  * specific IDData if you want implement. Get the singleton instance
  * via getDefault().
+ * 
+ * WARNING: not thread safe!
  *
  * @author Peter Karich
  */

@@ -17,7 +17,7 @@ import java.util.Iterator;
  *
  * @author Peter Karich
  */
-class DoubleVector extends AbstractCollection implements VectorInterface {
+class DoubleVector extends AbstractCollection implements DoubleVectorInterface {
     
     private boolean maxIsInvalid = true;
     private boolean minIsInvalid = true;

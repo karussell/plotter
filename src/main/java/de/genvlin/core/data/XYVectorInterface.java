@@ -54,5 +54,9 @@ public interface XYVectorInterface extends BoundedXYCollectionInterface {
     
     public double getXDouble(int index);
     
-    public double getYDouble(int index);        
+    public double getYDouble(int index);
+    
+    VectorInterface getX();
+    
+    VectorInterface getY();
 }
